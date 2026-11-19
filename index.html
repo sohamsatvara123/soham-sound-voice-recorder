@@ -574,7 +574,7 @@ startWaveform(stream);
         controls.style.display = 'flex';
         indicator.style.display = 'block';
 
-        setStatus('Recording... Speak your booking details.', '#ff6675');
+        setStatus('રેકોર્ડિંગ થઈ રહ્યું છે... તમારી બુકિંગ વિગતો રેકોર્ડ કરો.', '#ff6675');
 
         timerInterval = setInterval(() => {
           seconds++;
@@ -651,7 +651,7 @@ if (!bookingManagerWindow || bookingManagerWindow.closed) {
   return;
 }
 
-setStatus('Sending audio to Booking Manager...', '#6ea3ff');
+setStatus('ઓડિયો રેકોર્ડ થઇ ગયો છે ...', '#6ea3ff');
 
 try {
   bookingManagerWindow.postMessage({
@@ -661,7 +661,7 @@ try {
 }, '*');
 
   setStatus(
-    '✓ Audio sent successfully! Returning to Booking Manager...',
+    '✓ ઓડિયો સફળતાપૂર્વક રેકોર્ડ થયો...',
     '#36d99a'
   );
 
@@ -673,7 +673,7 @@ try {
   console.error('Audio transfer error:', error);
 
   setStatus(
-    'Could not send audio. Please try again.',
+    'કૃપા કરીને ફરી પ્રયાસ કરો.',
     '#ff6675'
   );
 }
