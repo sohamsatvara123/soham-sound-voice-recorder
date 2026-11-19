@@ -348,7 +348,7 @@ const bookingManagerWindow = window.opener;
 
 if (!bookingManagerWindow || bookingManagerWindow.closed) {
   setStatus(
-    'Please open this recorder using the Booking Manager.',
+    'Booking Manager window not found. Please reopen the recorder from Booking Manager.',
     '#ffad42'
   );
   return;
@@ -356,16 +356,30 @@ if (!bookingManagerWindow || bookingManagerWindow.closed) {
 
 setStatus('Sending audio to Booking Manager...', '#6ea3ff');
 
-bookingManagerWindow.postMessage({
-  type: 'SOHAM_VOICE_AUDIO',
-  blob: audioBlob,
-  mimeType: mimeType
-}, '*');
+try {
+  bookingManagerWindow.postMessage({
+    type: 'SOHAM_VOICE_AUDIO',
+    blob: audioBlob,
+    mimeType: mimeType
+  }, 'https://script.google.com');
 
-setStatus(
-  'Audio sent! Return to your Booking Manager.',
-  '#36d99a'
-);
+  setStatus(
+    '✓ Audio sent successfully! Returning to Booking Manager...',
+    '#36d99a'
+  );
+
+  setTimeout(() => {
+    window.close();
+  }, 1200);
+
+} catch (error) {
+  console.error('Audio transfer error:', error);
+
+  setStatus(
+    'Could not send audio. Please try again.',
+    '#ff6675'
+  );
+}
 
     }
 
