@@ -358,10 +358,10 @@ setStatus('Sending audio to Booking Manager...', '#6ea3ff');
 
 try {
   bookingManagerWindow.postMessage({
-    type: 'SOHAM_VOICE_AUDIO',
-    blob: audioBlob,
-    mimeType: mimeType
-  }, 'https://script.google.com');
+  type: 'SOHAM_VOICE_AUDIO',
+  blob: audioBlob,
+  mimeType: mimeType
+}, '*');
 
   setStatus(
     '✓ Audio sent successfully! Returning to Booking Manager...',
