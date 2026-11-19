@@ -1,14 +1,17 @@
 
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="gu">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOHAM SOUND - Voice Recorder</title>
 
   <style>
-   :root {
+ 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700;800&display=swap');
+
+:root {
   --brand-gradient: linear-gradient(
     110deg,
     #2463ff 0%,
@@ -17,48 +20,225 @@
     #ff5a36 100%
   );
 
-  --brand-blue: #2463ff;
-  --brand-purple: #6235ed;
-  --brand-magenta: #c000c8;
-  --brand-orange: #ff5a36;
+  --bg: #10111a;
+  --card: #191d2c;
+  --border: #34394e;
+  --text: #f5f6ff;
+  --muted: #aeb9d5;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: #10111a;
+  margin: 0;
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(98, 53, 237, 0.13), transparent 42%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans Gujarati', sans-serif;
 }
 
-.recorder-card {
-  background: #191d2c;
-  border: 1px solid #34394e;
+.recorder {
+  width: 100%;
+  max-width: 660px;
+  min-height: 710px;
+  padding: 38px 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
 
-.mic-button {
-  background: var(--brand-gradient);
-  border: none;
-  box-shadow: 0 10px 35px rgba(98, 53, 237, 0.35);
-}
-
-.mic-button:hover {
-  filter: brightness(1.12);
-  transform: scale(1.04);
-}
-
-h1 {
+.brand {
+  margin-bottom: 14px;
+  font-family: Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 5px;
   background: var(--brand-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.timer {
+h2 {
+  margin: 0 0 18px;
   color: #ffffff;
+  font-size: 34px;
+  font-weight: 800;
 }
 
-.status-message {
-  color: #b9c5e5;
+.description {
+  max-width: 540px;
+  margin: 0 0 42px;
+  color: #c2cbe2;
+  font-size: 19px;
+  line-height: 1.9;
 }
-  
+
+.mic-button {
+  width: 165px;
+  height: 165px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: white;
+  font-size: 48px;
+  cursor: pointer;
+  box-shadow: 0 12px 40px rgba(98, 53, 237, 0.35);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.mic-button:hover {
+  transform: scale(1.05);
+  filter: brightness(1.12);
+}
+
+.mic-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.indicator {
+  display: none;
+  margin-top: 22px;
+  color: #ff718b;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: #ff496c;
+  box-shadow: 0 0 12px #ff496c;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  50% { opacity: 0.35; }
+}
+
+.timer {
+  margin-top: 24px;
+  color: white;
+  font-family: Arial, sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: none;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.action {
+  min-width: 125px;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-family: 'Noto Sans Gujarati', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.action:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+}
+
+.action.stop {
+  background: var(--brand-gradient);
+}
+
+.action.cancel {
+  background: #34394e;
+  border: 1px solid #505772;
+}
+
+.action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.note {
+  margin-top: 48px;
+  color: #8795b6;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+#status {
+  min-height: 28px;
+  margin-top: 22px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 18px 12px;
+  }
+
+  .recorder {
+    min-height: 650px;
+    padding: 30px 20px;
+    border-radius: 24px;
+  }
+
+  h2 {
+    font-size: 28px;
+  }
+
+  .description {
+    font-size: 16px;
+    margin-bottom: 34px;
+  }
+
+  .mic-button {
+    width: 145px;
+    height: 145px;
+  }
+
+  .timer {
+    font-size: 36px;
+  }
+
+  .action {
+    min-width: 110px;
+    padding: 12px 15px;
+    font-size: 15px;
+  }
+
+  .note {
+    margin-top: 38px;
+    font-size: 13px;
+  }
+}
   </style>
 </head>
 
@@ -89,7 +269,7 @@ h1 {
         ✕ કેન્સલ 
       </button>
     </div>
-
+<div id="status" role="status" aria-live="polite"></div>
     <div class="note">
       મહત્તમ રેકોર્ડિંગ સમય: ૩ મિનિટ · મહત્તમ ઑડિયો સાઇઝ: ૬ MB
     </div>
