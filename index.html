@@ -1,1 +1,366 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOHAM SOUND - Voice Recorder</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: #10121b;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    .recorder {
+      width: 100%;
+      max-width: 440px;
+      padding: 28px;
+      border: 1px solid #303548;
+      border-radius: 20px;
+      background: #191d2b;
+      text-align: center;
+      box-shadow: 0 15px 45px #0005;
+    }
+
+    .brand {
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      color: #aeb9d5;
+    }
+
+    h2 {
+      margin: 12px 0 8px;
+      font-size: 23px;
+    }
+
+    .description {
+      color: #aeb5c8;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .mic-button {
+      width: 110px;
+      height: 110px;
+      margin: 28px auto 18px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1264ff, #a000db);
+      color: white;
+      font-size: 38px;
+      cursor: pointer;
+      box-shadow: 0 0 35px #1264ff55;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .controls {
+      display: none;
+      justify-content: center;
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .action {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 20px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .stop {
+      background: #dc3545;
+    }
+
+    .cancel {
+      background: #41485b;
+    }
+
+    .timer {
+      margin: 15px 0;
+      font-size: 30px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .indicator {
+      display: none;
+      color: #ff6675;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: #ff334d;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      50% { opacity: .3; }
+    }
+
+    .status {
+      min-height: 42px;
+      margin-top: 20px;
+      color: #b8c2d9;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .note {
+      margin-top: 18px;
+      color: #747e96;
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="recorder">
+    <div class="brand">SOHAM SOUND</div>
+    <h2>Voice Booking</h2>
+
+    <p class="description">
+      Speak your booking details in Gujarati, Hindi or English.
+      Your recording will be sent to the Booking Manager for transcription.
+    </p>
+
+    <button id="startBtn" class="mic-button" type="button"
+      aria-label="Start recording">🎙</button>
+
+    <div id="indicator" class="indicator">
+      <span class="dot"></span> RECORDING
+    </div>
+
+    <div id="timer" class="timer">00:00</div>
+
+    <div id="controls" class="controls">
+      <button id="stopBtn" class="action stop" type="button">
+        ■ Stop
+      </button>
+
+      <button id="cancelBtn" class="action cancel" type="button">
+        ✕ Cancel
+      </button>
+    </div>
+
+    <div id="status" class="status" aria-live="polite">
+      Tap the microphone to start recording.
+    </div>
+
+    <div class="note">
+      Maximum recording duration: 3 minutes · Maximum audio size: 6 MB
+    </div>
+  </main>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const controls = document.getElementById('controls');
+    const indicator = document.getElementById('indicator');
+    const timer = document.getElementById('timer');
+    const statusBox = document.getElementById('status');
+
+    let recorder = null;
+    let stream = null;
+    let chunks = [];
+    let seconds = 0;
+    let timerInterval = null;
+    let cancelRequested = false;
+
+    function setStatus(message, color = '#b8c2d9') {
+      statusBox.textContent = message;
+      statusBox.style.color = color;
+    }
+
+    function formatTime(value) {
+      const min = Math.floor(value / 60);
+      const sec = value % 60;
+
+      return String(min).padStart(2, '0') + ':' +
+        String(sec).padStart(2, '0');
+    }
+
+    function cleanup() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+
+      recorder = null;
+      chunks = [];
+
+      startBtn.disabled = false;
+      startBtn.style.display = 'grid';
+      controls.style.display = 'none';
+      indicator.style.display = 'none';
+    }
+
+    async function startRecording() {
+      if (recorder) return;
+
+      if (!navigator.mediaDevices?.getUserMedia ||
+          typeof MediaRecorder === 'undefined') {
+        setStatus('This browser does not support audio recording.', '#ff6675');
+        return;
+      }
+
+      try {
+        startBtn.disabled = true;
+        setStatus('Requesting microphone permission...');
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+
+        const formats = [
+          'audio/webm;codecs=opus',
+          'audio/ogg;codecs=opus',
+          'audio/mp4'
+        ];
+
+        const selected = formats.find(type =>
+          MediaRecorder.isTypeSupported(type)
+        );
+
+        recorder = selected
+          ? new MediaRecorder(stream, { mimeType: selected })
+          : new MediaRecorder(stream);
+
+        chunks = [];
+        seconds = 0;
+        cancelRequested = false;
+        timer.textContent = '00:00';
+
+        recorder.ondataavailable = event => {
+          if (event.data?.size > 0) chunks.push(event.data);
+        };
+
+        recorder.onstop = handleRecordingStopped;
+
+        recorder.start(1000);
+
+        startBtn.style.display = 'none';
+        controls.style.display = 'flex';
+        indicator.style.display = 'block';
+
+        setStatus('Recording... Speak your booking details.', '#ff6675');
+
+        timerInterval = setInterval(() => {
+          seconds++;
+          timer.textContent = formatTime(seconds);
+
+          if (seconds >= 180) {
+            setStatus('Maximum 3-minute recording limit reached.', '#ffad42');
+            stopRecording();
+          }
+        }, 1000);
+
+      } catch (error) {
+        console.error('Microphone error:', error);
+        cleanup();
+
+        let message = 'Could not start microphone: ' + error.message;
+
+        if (error.name === 'NotAllowedError' ||
+            error.name === 'PermissionDeniedError') {
+          message = 'Microphone permission denied. Allow microphone access in your browser.';
+        }
+
+        setStatus(message, '#ff6675');
+      }
+    }
+
+    function stopRecording() {
+      if (recorder && recorder.state === 'recording') {
+        stopBtn.disabled = true;
+        setStatus('Preparing your audio...', '#6ea3ff');
+        recorder.stop();
+      }
+    }
+
+    function cancelRecording() {
+      if (!recorder) return;
+
+      cancelRequested = true;
+
+      if (recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+    }
+
+    function handleRecordingStopped() {
+      const mimeType = recorder?.mimeType || 'audio/webm';
+      const audioBlob = new Blob(chunks, { type: mimeType });
+
+      cleanup();
+      stopBtn.disabled = false;
+
+      if (cancelRequested) {
+        setStatus('Recording cancelled.');
+        return;
+      }
+
+      if (!audioBlob.size) {
+        setStatus('No audio was recorded.', '#ff6675');
+        return;
+      }
+
+      if (audioBlob.size > 6 * 1024 * 1024) {
+        setStatus('Audio exceeds 6 MB. Please record a shorter message.', '#ff6675');
+        return;
+      }
+
+      if (!window.parent || window.parent === window) {
+        setStatus('Recorder is ready, but it must be opened from the Booking Manager.', '#ffad42');
+        return;
+      }
+
+      setStatus('Sending audio to Booking Manager...', '#6ea3ff');
+
+      window.parent.postMessage({
+        type: 'SOHAM_VOICE_AUDIO',
+        blob: audioBlob,
+        mimeType: mimeType
+      }, '*');
+    }
+
+    startBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+    cancelBtn.addEventListener('click', cancelRecording);
+  </script>
+</body>
+</html>
