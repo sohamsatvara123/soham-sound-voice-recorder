@@ -199,6 +199,70 @@ h2 {
   line-height: 1.7;
 }
 
+
+/* LIVE AUDIO WAVEFORM */
+.waveform {
+  display: none;
+  width: 100%;
+  max-width: 510px;
+  margin-top: 28px;
+  padding: 16px;
+  border: 1px solid #34394e;
+  border-radius: 18px;
+  background: #111522;
+}
+
+.waveform-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #aeb9d5;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ff718b;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff496c;
+  animation: pulse 1s infinite;
+}
+
+#waveCanvas {
+  display: block;
+  width: 100%;
+  height: 95px;
+}
+
+#waveHint {
+  margin-top: 8px;
+  color: #8795b6;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .waveform {
+    padding: 12px;
+    margin-top: 22px;
+  }
+
+  #waveCanvas {
+    height: 75px;
+  }
+}
+
+    
 @media (max-width: 600px) {
   body {
     padding: 18px 12px;
@@ -260,6 +324,17 @@ h2 {
 
     <div id="timer" class="timer">00:00</div>
 
+    <div id="waveform" class="waveform">
+  <div class="waveform-label">
+    <span>લાઇવ ઑડિયો વેવફોર્મ</span>
+    <span class="live-indicator">
+      <span class="live-dot"></span> LIVE
+    </span>
+  </div>
+  <canvas id="waveCanvas"></canvas>
+  <div id="waveHint">તમારો અવાજ અહીં દેખાશે</div>
+</div>
+
     <div id="controls" class="controls">
       <button id="stopBtn" class="action stop" type="button">
         ■ સ્ટોપ 
@@ -290,11 +365,134 @@ h2 {
     let seconds = 0;
     let timerInterval = null;
     let cancelRequested = false;
+    let audioContext = null;
+let analyser = null;
+let waveformAnimationId = null;
 
     function setStatus(message, color = '#b8c2d9') {
       statusBox.textContent = message;
       statusBox.style.color = color;
     }
+
+    function startWaveform(audioStream) {
+  const waveform = document.getElementById('waveform');
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+
+  waveform.style.display = 'block';
+
+  try {
+    const AudioContextClass =
+      window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContextClass) {
+      throw new Error('AudioContext not supported');
+    }
+
+    audioContext = new AudioContextClass();
+    analyser = audioContext.createAnalyser();
+
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.75;
+
+    const source = audioContext.createMediaStreamSource(audioStream);
+    source.connect(analyser);
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const barCount = 42;
+
+    function draw() {
+      waveformAnimationId = requestAnimationFrame(draw);
+
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+
+      if (
+        canvas.width !== Math.round(width * dpr) ||
+        canvas.height !== Math.round(height * dpr)
+      ) {
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      analyser.getByteFrequencyData(data);
+
+      const gap = 4;
+      const barWidth = (width - gap * (barCount - 1)) / barCount;
+      const centerY = height / 2;
+
+      const gradient = ctx.createLinearGradient(0, 0, width, 0);
+      gradient.addColorStop(0, '#2463ff');
+      gradient.addColorStop(0.38, '#6235ed');
+      gradient.addColorStop(0.72, '#c000c8');
+      gradient.addColorStop(1, '#ff5a36');
+
+      ctx.fillStyle = gradient;
+
+      for (let i = 0; i < barCount; i++) {
+        const dataIndex = Math.floor(
+          i * data.length / barCount
+        );
+
+        const value = data[dataIndex] / 255;
+
+        const barHeight = Math.max(
+          4,
+          value * height * 0.9
+        );
+
+        const x = i * (barWidth + gap);
+        const y = centerY - barHeight / 2;
+
+        ctx.beginPath();
+        ctx.roundRect(
+          x,
+          y,
+          barWidth,
+          barHeight,
+          barWidth / 2
+        );
+        ctx.fill();
+      }
+    }
+
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+
+    draw();
+
+  } catch (error) {
+    console.warn('Waveform could not start:', error);
+    waveform.style.display = 'none';
+  }
+}
+
+function stopWaveform() {
+  if (waveformAnimationId !== null) {
+    cancelAnimationFrame(waveformAnimationId);
+    waveformAnimationId = null;
+  }
+
+  if (audioContext) {
+    audioContext.close().catch(error => {
+      console.warn('AudioContext close error:', error);
+    });
+
+    audioContext = null;
+    analyser = null;
+  }
+
+  const waveform = document.getElementById('waveform');
+
+  if (waveform) {
+    waveform.style.display = 'none';
+  }
+}
 
     function formatTime(value) {
       const min = Math.floor(value / 60);
@@ -305,7 +503,9 @@ h2 {
     }
 
     function cleanup() {
-      clearInterval(timerInterval);
+  stopWaveform();
+
+  clearInterval(timerInterval);
       timerInterval = null;
 
       if (stream) {
@@ -342,7 +542,7 @@ h2 {
             autoGainControl: true
           }
         });
-
+startWaveform(stream);
         const formats = [
           'audio/webm;codecs=opus',
           'audio/ogg;codecs=opus',
