@@ -344,18 +344,29 @@
         return;
       }
 
-      if (!window.parent || window.parent === window) {
-        setStatus('Recorder is ready, but it must be opened from the Booking Manager.', '#ffad42');
-        return;
-      }
+const bookingManagerWindow = window.opener;
 
-      setStatus('Sending audio to Booking Manager...', '#6ea3ff');
+if (!bookingManagerWindow || bookingManagerWindow.closed) {
+  setStatus(
+    'Please open this recorder using the Booking Manager.',
+    '#ffad42'
+  );
+  return;
+}
 
-      window.parent.postMessage({
-        type: 'SOHAM_VOICE_AUDIO',
-        blob: audioBlob,
-        mimeType: mimeType
-      }, '*');
+setStatus('Sending audio to Booking Manager...', '#6ea3ff');
+
+bookingManagerWindow.postMessage({
+  type: 'SOHAM_VOICE_AUDIO',
+  blob: audioBlob,
+  mimeType: mimeType
+}, '*');
+
+setStatus(
+  'Audio sent! Return to your Booking Manager.',
+  '#36d99a'
+);
+
     }
 
     startBtn.addEventListener('click', startRecording);
