@@ -683,6 +683,22 @@ try {
     startBtn.addEventListener('click', startRecording);
     stopBtn.addEventListener('click', stopRecording);
     cancelBtn.addEventListener('click', cancelRecording);
+
+    
+// Automatically start recording when opened from Booking Manager.
+window.addEventListener('load', () => {
+  if (window.opener && !window.opener.closed) {
+    setStatus('Connecting to microphone...', '#6ea3ff');
+
+    startRecording();
+  } else {
+    setStatus(
+      'રેકોર્ડિંગ શરૂ કરવા માઇક્રોફોન બટન દબાવો.',
+      '#b8c2d9'
+    );
+  }
+});
+
   </script>
 </body>
 </html>
