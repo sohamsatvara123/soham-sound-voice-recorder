@@ -311,10 +311,6 @@ h2 {
     <div class="brand">SOHAM SOUND</div>
     <h2>વોઇસ બુકિંગ</h2>
 
-    <p class="description">
-      ગુજરાતી, હિન્દી અથવા અંગ્રેજીમાં બુકિંગની વિગતો રેકોર્ડ કરવા નીચેના બટન પર ક્લિક કરો .
-    </p>
-
     <button id="startBtn" class="mic-button" type="button"
       aria-label="Start recording">🎙</button>
 
@@ -627,7 +623,7 @@ startWaveform(stream);
       stopBtn.disabled = false;
 
       if (cancelRequested) {
-        setStatus('Recording cancelled.');
+        setStatus('રેકોર્ડિંગ કરવાનું બંદ કર્યું . ફરીથી રેકોર્ડિંગ કરવા ઉપર વાળા બટન પર ક્લિક કરો.');
         return;
       }
 
